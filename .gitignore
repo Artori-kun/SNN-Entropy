@@ -1,0 +1,4 @@
+.venv/
+__pylance__/
+data/
+.DS_Store
