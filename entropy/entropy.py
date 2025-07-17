@@ -1,5 +1,6 @@
 import numpy as np
-
+from collections import Counter
+import math
 # Define the EntropyCalculator class
 # which includes methods to calculate entropy of spike trains
 # these entropy calculation include:
@@ -15,50 +16,74 @@ class EntropyCalculator:
     def __init__(self):
         pass
     
+    def joint_probabilities(self, X, Y):
+        """
+        Compute joint probabilities of two binary spike trains.
+
+        Parameters:
+        - X (np.ndarray): 1D binary spike train
+        - Y (np.ndarray): 1D binary spike train
+
+        Returns:
+        - dict: Joint probabilities for each combination of (X, Y)
+        """
+        if len(X) != len(Y):
+            raise ValueError("Spike trains must be the same length")
+
+        joint = list(zip(X, Y))
+        n = len(joint)
+        
+        joint_counts = Counter(joint)
+        
+        return {k: v / n for k, v in joint_counts.items()}
+    
     # 1. Shannon entropy
-    def shannon_entropy(self, spike_train, output):
+    def shannon_entropy(self, spike_train, output='mean'):
         """
         Compute Shannon entropy of a binary spike train.
 
         Parameters:
-        - spike_train (np.ndarray): 2D array (binary 0/1)
+        - spike_train (np.ndarray): 1D or 2D array (binary 0/1)
         - output (str): 'none' for arrays of entropies for each neuron, 'mean' for mean entropy across neurons, 'sum' for sum of entropies across neurons.
 
         Returns:
         - float or np.ndarray: Entropy
         """
-        def compute_entropy(p):
-            if p == 0 or p == 1:
-                return 0.0
-            return -p * np.log2(p) - (1 - p) * np.log2(1 - p)
-
+        def compute_entropy_1d(spike_train):
+            n = len(spike_train)
+            counts = Counter(spike_train)
+            probabilities = np.array([count / n for count in counts.values()])
+            entropy = - np.sum( p * np.log2(p) for p in probabilities if p > 0)
+            return entropy
+            
         spike_train = np.asarray(spike_train)
 
-        if spike_train.ndim != 2:
-            raise ValueError("Input must be a 2D binary array")
-        else:
+        if spike_train.ndim == 1:
+            return compute_entropy_1d(spike_train)
+        elif spike_train.ndim == 2:
             entropies = []
             for neuron_train in spike_train:
-                p = np.mean(neuron_train)
-                entropies.append(compute_entropy(p))
+                entropies.append(compute_entropy_1d(neuron_train))
             entropies = np.array(entropies)
             
-        if output == 'none':
-            return entropies
-        elif output == 'mean':
-            return np.mean(entropies)
-        elif output == 'sum':
-            return np.sum(entropies)
+            if output == 'none':
+                return entropies
+            elif output == 'mean':
+                return np.mean(entropies)
+            elif output == 'sum':
+                return np.sum(entropies)
+            else:
+                raise ValueError("Output must be 'none', 'mean', or 'sum'")
         else:
-            raise ValueError("Output must be 'none', 'mean', or 'sum'")
+            raise ValueError("Input must be a 1D or 2D binary array")
         
     # 2. Entropy rate
-    def entropy_rate_matrix(self, spike_train, output, window_size=3):
+    def entropy_rate(self, spike_train, output='mean', window_size=3):
         """
         Compute entropy rate for each neuron in a binary spike matrix.
 
         Parameters:
-        - spike_train (np.ndarray): shape (n_neurons, n_timesteps)
+        - spike_train (np.ndarray): 1D or 2D array (binary 0/1)
         - window_size (int): sliding window size k
         - reduction (str): 'none' → return vector per neuron,
                         'mean' → return mean across neurons,
@@ -67,45 +92,56 @@ class EntropyCalculator:
         Returns:
         - np.ndarray or float: entropy rate per neuron or reduced value
         """
-        def compute_entropy_rate_single(seq, k):
-            if len(seq) < k:
-                return 0.0
-            patterns = [tuple(seq[i:i + k]) for i in range(len(seq) - k + 1)]
-            unique, counts = np.unique(patterns, axis=0, return_counts=True)
-            probs = counts / counts.sum()
-            entropy = -np.sum(probs * np.log2(probs))
-            return entropy / k
+        def compute_entropy_rate_1d(spike_train, k):
+            
+            if isinstance(spike_train, np.ndarray):
+                spike_train = spike_train.tolist()
+            
+            if isinstance(spike_train, list):
+                spike_train = ''.join(str(b) for b in spike_train)
+            
+            n = len(spike_train)
+            if n < k:
+                raise ValueError("Sequence length must be at least k")
+            
+            blocks = [spike_train[i:i+k] for i in range(n - k + 1)]
+            block_counts = Counter(blocks)
+            total_blocks = len(blocks)
+            probs = np.array([count / total_blocks for count in block_counts.values()])
+            block_entropy = -np.sum(p * np.log2(p) for p in probs if p > 0)
+            
+            entropy_rate = block_entropy / k
+            return entropy_rate
 
         spike_train = np.asarray(spike_train)
-        if spike_train.ndim != 2:
-            raise ValueError("Input must be a 2D binary array")
-
-        entropy_list = [
-            compute_entropy_rate_single(spike_train[i], window_size)
-            for i in range(spike_train.shape[0])
-        ]
-
-        entropy_array = np.array(entropy_list)
-
-        if output == 'none':
-            return entropy_array
-        elif output == 'mean':
-            return np.mean(entropy_array)
-        elif output == 'sum':
-            return np.sum(entropy_array)
-        else:
-            raise ValueError("Invalid reduction type. Choose 'none', 'mean', or 'sum'.")
         
+        if spike_train.ndim == 1:
+            return compute_entropy_rate_1d(spike_train, window_size)
+        elif spike_train.ndim == 2:
+            entropy_list = [
+                compute_entropy_rate_1d(neuron_train, window_size)
+                for neuron_train in spike_train
+            ]
+            
+            entropy_array = np.array(entropy_list)
+            if output == 'none':
+                return entropy_array
+            elif output == 'mean':
+                return np.mean(entropy_array)
+            elif output == 'sum':
+                return np.sum(entropy_array)
+            else:
+                raise ValueError("Invalid reduction type. Choose 'none', 'mean', or 'sum'.")
+        else:
+            raise ValueError("Input must be a 1D or 2D binary array")
     
     # 3. Conditional entropy
-    # measure the uncertainty of the spike train in time t given the spike train in time t-1
-    # does not measure the uncertainty between 2 spike trains
-    def conditional_entropy(self, spike_train, output):
+    def conditional_entropy(self, X, Y, output='none'):
         """
-        Compute conditional entropy H(X_t | X_{t-1}) for a binary spike train.
+        Compute conditional entropy H(X|Y) between two binary spike trains X and Y.
 
         Parameters:
-        - spike_train (np.ndarray): 2D binary spike train
+        - X, Y (np.ndarray): 1D or 2D binary spike train
         - output (str): 'none' for array of entropies per neuron,
                         'mean' for mean entropy across neurons,
                         'sum' for sum of entropies across neurons.
@@ -113,87 +149,96 @@ class EntropyCalculator:
         Returns:
         - float or np.ndarray: entropy per neuron (1D) or reduced value
         """
-        def compute_cond_entropy(seq):
-            if len(seq) < 2:
-                return 0.0
+        def compute_cond_entropy_1d(x, y):
+            joint_probs = self.joint_probabilities(x, y)
+            py = Counter(y)
+            n = len(y)
             
-            # Count joint occurrences of (x_{t-1}, x_t)
-            joint_counts = {
-                (0, 0): 0, (0, 1): 0,
-                (1, 0): 0, (1, 1): 0
-            }
-            for t in range(1, len(seq)):
-                pair = (seq[t-1], seq[t])
-                joint_counts[pair] += 1
+            py = {k: v / n for k, v in py.items()}
+            
+            h = 0.0
+            for (x_val, y_val), p_xy in joint_probs.items():
+                if py[y_val] > 0:
+                    p_x_given_y = p_xy / py[y_val]
+                    h += p_xy * np.log2(p_x_given_y)
+            return -h
 
-            total = sum(joint_counts.values())
-            if total == 0:
-                return 0.0
-
-            joint_probs = {k: v / total for k, v in joint_counts.items()}
-            cond_entropy = 0.0
-
-            for (x_prev, x_curr), p_joint in joint_probs.items():
-                p_prev = sum(joint_probs[(x_prev, b)] for b in [0, 1])
-                if p_joint > 0 and p_prev > 0:
-                    cond_entropy += -p_joint * np.log2(p_joint / p_prev)
-            return cond_entropy
-
-        spike_train = np.asarray(spike_train)
-
-        if spike_train.ndim == 2:
-            entropies = np.array([compute_cond_entropy(neuron) for neuron in spike_train])
-        else:
-            raise ValueError("Input must be 2D binary array")
+        X = np.array(X)
+        Y = np.array(Y)
         
-        if output == 'none':
-            return entropies
-        elif output == 'mean':
-            return np.mean(entropies)
-        elif output == 'sum':
-            return np.sum(entropies)
+        if X.shape != Y.shape:
+            raise ValueError("X and Y must have the same shape")
+        
+        if X.ndim == 1 and Y.ndim == 1:
+            return compute_cond_entropy_1d(X, Y)
+        elif X.ndim == 2 and Y.ndim == 2:
+            hxy_list = []
+            for i in range(X.shape[0]):
+                hxy_list.append(compute_cond_entropy_1d(X[i], Y[i]))
+            hxy_list = np.array(hxy_list)
+            
+            if output == 'none':
+                return hxy_list
+            elif output == 'mean':
+                return np.mean(hxy_list)
+            elif output == 'sum':
+                return np.sum(hxy_list)
+            else:
+                raise ValueError("Output must be 'none', 'mean', or 'sum'")
         else:
-            raise ValueError("Output must be 'none', 'mean', or 'sum'")
-
+            raise ValueError("Input must be 1D or 2D binary arrays")
+        
     # 4. Mutual information
-    def mutual_information(self, spike_train_x, spike_train_y):
+    def mutual_information(self, X, Y, output='none'):
         """
         Compute mutual information I(X; Y) between two binary spike trains.
 
         Parameters:
-        - spike_train_x (np.ndarray): 1D binary spike train
-        - spike_train_y (np.ndarray): 1D binary spike train
+        - X, Y (np.ndarray): 1D or 2D binary spike train
+        - output (str): 'none' for array of entropies per neuron,
+                        'mean' for mean entropy across neurons,
+                        'sum' for sum of entropies across neurons.
 
         Returns:
-        - float: Mutual information in bits
+        - float or np.ndarray: entropy per neuron (1D) or reduced value
         """
-        if len(spike_train_x) != len(spike_train_y):
-            raise ValueError("Spike trains must be the same length")
+        
+        def compute_mutual_info_1d(x, y):
+            joint_probs = self.joint_probabilities(x, y)
+            p_x = Counter(x)
+            p_y = Counter(y)
+            n = len(x)
+            
+            p_x = {k: v / n for k, v in p_x.items()}
+            p_y = {k: v / n for k, v in p_y.items()}
 
-        # Count joint occurrences
-        joint_counts = {
-            (0, 0): 0, (0, 1): 0,
-            (1, 0): 0, (1, 1): 0
-        }
-        for x, y in zip(spike_train_x, spike_train_y):
-            joint_counts[(x, y)] += 1
-
-        total = sum(joint_counts.values())
-        if total == 0:
-            return 0.0
-
-        joint_probs = {k: v / total for k, v in joint_counts.items()}
-        p_x = {
-            0: sum(joint_probs[(0, b)] for b in [0, 1]),
-            1: sum(joint_probs[(1, b)] for b in [0, 1])
-        }
-        p_y = {
-            0: sum(joint_probs[(a, 0)] for a in [0, 1]),
-            1: sum(joint_probs[(a, 1)] for a in [0, 1])
-        }
-
-        mi = 0.0
-        for (x, y), p_xy in joint_probs.items():
-            if p_xy > 0 and p_x[x] > 0 and p_y[y] > 0:
-                mi += p_xy * np.log2(p_xy / (p_x[x] * p_y[y]))
-        return mi
+            mi = 0.0
+            for (x_val, y_val), p_xy in joint_probs.items():
+                if p_x[x_val] > 0 and p_y[y_val] > 0:
+                    mi += p_xy * np.log2(p_xy / (p_x[x_val] * p_y[y_val]))
+            return mi
+        
+        X = np.array(X)
+        Y = np.array(Y)
+        
+        if X.shape != Y.shape:
+            raise ValueError("X and Y must have the same shape")
+        
+        if X.ndim == 1 and Y.ndim == 1:
+            return compute_mutual_info_1d(X, Y)
+        elif X.ndim == 2 and Y.ndim == 2:
+            mi_list = []
+            for i in range(X.shape[0]):
+                mi_list.append(compute_mutual_info_1d(X[i], Y[i]))
+            mi_list = np.array(mi_list)
+            
+            if output == 'none':
+                return mi_list
+            elif output == 'mean':
+                return np.mean(mi_list)
+            elif output == 'sum':
+                return np.sum(mi_list)
+            else:
+                raise ValueError("Output must be 'none', 'mean', or 'sum'")
+        else:
+            raise ValueError("Input must be 1D or 2D binary arrays")
