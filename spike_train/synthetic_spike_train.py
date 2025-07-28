@@ -275,7 +275,7 @@ class SpikeTrainGenerator:
             plt.title("Waveform of sample_2_label_7.wav")
             plt.xlabel("Time (s)")
             plt.ylabel("Amplitude")
-            plt.tight_layout()
+            #plt.tight_layout()
             plt.show()
             
             self.plot_spike_train(w.reshape(1, -1), title="LIF Encoded Spike Train", xlabel="Time (ms)", ylabel="Neuron Index")

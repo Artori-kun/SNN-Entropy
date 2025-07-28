@@ -101,7 +101,8 @@ class SpikingNeuralNetwork:
         interval=100*ms,
         v_threshold=0.05,
         refractory=5*ms,
-        gmax=0.1
+        gmax=0.1,
+        title=""
     ):
         """
         Train a simple SNN (1 input → 1 output neuron) using STDP with repeated spike input.
@@ -131,10 +132,6 @@ class SpikingNeuralNetwork:
         # model parameters
         taupre = taupost = 20 * ms
         taum = 10 * ms
-        # Ee = 0*mV
-        # vt = vt
-        # vr = vr
-        # El = -74*mV
         taue = 15*ms
         gmax = gmax  # max synaptic weight
         dApre = 0.01
@@ -246,7 +243,10 @@ class SpikingNeuralNetwork:
         plt.title("Output Neuron Spike Times")
         plt.xlabel("Time (s)")
         plt.ylabel("Output Neuron Voltage")
+        
+        plt.suptitle(title)
         plt.tight_layout()
+        plt.subplots_adjust(top=0.9)
         plt.show()
         
         return {
