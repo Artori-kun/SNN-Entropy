@@ -3,3 +3,6 @@ __pylance__/
 data/
 .DS_Store
 speech_commands_samples/
+speech_command_dataset_v2/
+spike_data/ch32
+spike_data/ch64

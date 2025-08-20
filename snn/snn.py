@@ -256,5 +256,31 @@ class SpikingNeuralNetwork:
             'mutual_infos': mutual_infos,
             # 'weights': weights
         }
+    
                 
+    def train_binary_classifier_stdp(
+        self,
+        spike_trains,
+        v_threshold=0.05,
+        gmax=1.0,
+        n_output_neurons=2,
+        title="Binary Classifier STDP Training"
+    ):
+        """
+        Train a binary classifier using STDP on multiple spike trains. The network consists of 1 input neuron, connected to 2 output neurons via STDP synapses.
+        Each output neuron corresponds to a class (0 or 1). The network learns to classify the input spike trains based on their firing patterns.
+        Entropies are measured at each epoch.
+
+        Args:
+            spike_trains: List of binary spike trains, where each train is a 1D numpy array.
+            v_threshold (float, optional): Voltage threshold for spike generation. Defaults to 0.05.
+            gmax (float, optional): Maximum synaptic conductance. Defaults to 1.0.
+            title (str, optional): Title for the training plot. Defaults to "Binary Classifier STDP Training".
+        """
+        
+        defaultclock.dt = 1 * ms
+        start_scope()
+        
+        P = PoissonGroup
+        
         

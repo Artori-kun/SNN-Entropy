@@ -78,7 +78,7 @@ class EntropyCalculator:
             raise ValueError("Input must be a 1D or 2D binary array")
         
     # 2. Entropy rate
-    def entropy_rate(self, spike_train, output='mean', window_size=3):
+    def entropy_rate(self, spike_train, output='mean', window_size=10):
         """
         Compute entropy rate for each neuron in a binary spike matrix.
 

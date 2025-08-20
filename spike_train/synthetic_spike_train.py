@@ -186,6 +186,56 @@ class SpikeTrainGenerator:
             
         return spike_train
     
+    # Thalamic burst spikes
+    def generate_thalamic_burst_spikes(
+        self,
+        n_neurons,
+        duration,
+        burst_rate=3,
+        spikes_per_burst=(3, 5),
+        isi_with_burst=4,
+        step=0.001
+    ):
+        """
+        Generate thalamic burst spikes with clusters of spikes.
+        
+        Parameters:
+        n_neurons (int): Number of neurons.
+        duration (float): Duration of the spike train in seconds.
+        burst_rate (int): Average number of bursts per second.
+        spikes_per_burst (tuple): Range of spikes per burst (min, max).
+        isi_with_burst (int): Inter-spike interval within a burst in time steps.
+        
+        Returns:
+        np.ndarray: Binary spike train of shape (n_neurons, t), where t is the number of time steps.
+        """
+        
+        n_steps = int(duration / step)  # Convert duration to time steps
+        spike_train = np.zeros((n_neurons, n_steps), dtype=int)
+        
+        n_bursts = int(burst_rate * duration)  # Total number of bursts
+        
+        burst_times = np.sort(
+            np.random.choice(
+                np.arange(100, n_steps - 100),
+                size=n_bursts,
+                replace=False
+            )
+        )
+        
+        for neuron in range(n_neurons):
+            for burst_time in burst_times:
+                # Randomly determine the number of spikes in this burst
+                n_spikes = np.random.randint(spikes_per_burst[0], spikes_per_burst[1] + 1)
+                
+                # Generate spikes within the burst
+                for i in range(n_spikes):
+                    spike_time = burst_time + i * isi_with_burst
+                    if spike_time < n_steps:
+                        spike_train[neuron, int(spike_time)] = 1
+                        
+        return spike_train
+
     # 4. Silent spikes
     # the signal has almost no spikes, with only a few random spikes occurring or completely silent
     # represented a neuron that is silent most of the time

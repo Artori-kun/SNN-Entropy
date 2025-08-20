@@ -1,0 +1,7 @@
+{
+  "val_acc_last": 0.40625,
+  "test_acc": 0.40625,
+  "n_train": 256,
+  "n_val": 32,
+  "n_test": 32
+}

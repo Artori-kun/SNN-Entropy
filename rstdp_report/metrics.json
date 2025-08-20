@@ -1,0 +1,17 @@
+{
+  "train_acc_last_count": 0.6145833333333334,
+  "train_acc_last_weight": 0.6145833333333334,
+  "train_acc_last_first": 0.5,
+  "train_acc_last_race": 0.5,
+  "val_acc_last_count": 0.7375,
+  "val_acc_last_weight": 0.7375,
+  "val_acc_last_first": 0.5875,
+  "val_acc_last_race": 0.4125,
+  "test_acc_count": 0.0,
+  "test_acc_weight": 0.0,
+  "test_acc_first": 0.0,
+  "test_acc_race": 0.0,
+  "n_train": 320,
+  "n_val": 80,
+  "n_test": 0
+}
