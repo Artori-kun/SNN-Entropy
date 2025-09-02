@@ -1,24 +1,24 @@
 {
-  "n_samples": 160,
+  "n_samples": 400,
   "n_features": 3200,
   "class_counts": {
-    "0": 80,
-    "1": 80
+    "0": 200,
+    "1": 200
   },
-  "accuracy": 0.84375,
-  "precision": 0.9230769230769231,
-  "recall": 0.75,
-  "f1": 0.8275862068965517,
-  "roc_auc": 0.9296875,
-  "pr_auc": 0.943228021978022,
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "roc_auc": 1.0,
+  "pr_auc": 1.0,
   "confusion_matrix": [
     [
-      15,
-      1
+      40,
+      0
     ],
     [
-      4,
-      12
+      0,
+      40
     ]
   ],
   "C": 1.0

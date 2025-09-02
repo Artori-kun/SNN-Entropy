@@ -6,3 +6,11 @@ speech_commands_samples/
 speech_command_dataset_v2/
 spike_data/ch32
 spike_data/ch64
+spike_data/syn
+spike_data/syn1000
+spike_data/raster_plot
+stdp_report/
+svm_npz_report/
+svm_npz_report_audio/
+
+
